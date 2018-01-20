@@ -16,7 +16,7 @@ void showImageAuto(std::string title, const Mat& img);
 int main()
 {
 	// name of file
-	std::string fileName = "zajic3";
+	std::string fileName = "zajic300";
 	
 	// open original Image
 	cv::Mat img = cv::imread("img/" + fileName + "/" + fileName + ".jpg", CV_LOAD_IMAGE_COLOR);
@@ -30,6 +30,7 @@ int main()
 	/***************************************************/
 	/* Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models */
 	// create instance for generating saliency map(Margolin, R.; Tal, A.; Zelnik-Manor, L.: What Makes a Patch Distinct?, 2013)
+	
 	SalMapMargolin MargolinSM(img);
 	showImageAuto("MargolinSalMap", MargolinSM.salMap);
 
@@ -85,7 +86,7 @@ int main()
 	//cv::imwrite("croppedVCBSCP" + fileName + ".jpg", cropVCBSCP);
 	//cv::imwrite("croppedStentiford" + fileName + ".jpg", cropStentiford);
 	cv::imwrite("img/" + fileName + "/" + "StentifordSM" + fileName + ".jpg", StentifordSM.salMap);
-	cv::imwrite("img/" + fileName + "/" + "MargolinSM" + fileName + ".jpg", MargolinSM.salMap);
+	//cv::imwrite("img/" + fileName + "/" + "MargolinSM" + fileName + ".jpg", MargolinSM.salMap);
 
 	return 0;
 }

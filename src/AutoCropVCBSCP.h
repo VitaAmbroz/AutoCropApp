@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <array>
 
-#define UINT32_MAX (0xffffffff)
+#define DEF_UINT32_MAX (0xffffffff)
 
 using namespace std;
 using namespace cv;

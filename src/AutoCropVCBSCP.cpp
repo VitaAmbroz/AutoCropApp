@@ -1,4 +1,4 @@
-#include "AutocropVCBSCP.h"
+#include "AutoCropVCBSCP.h"
 #include <opencv2/opencv.hpp>
 
 using namespace std;
@@ -98,8 +98,8 @@ void AutoCropVCBSCP::randomWalk(int iterations, float zoomFactor) {
 		/* Content Preservation Part End */
 	}
 
-	uint32_t tmpScore = UINT32_MAX;
-	uint32_t bestBoundaryScore = UINT32_MAX;
+	uint32_t tmpScore = DEF_UINT32_MAX;
+	uint32_t bestBoundaryScore = DEF_UINT32_MAX;
 	int bestIndex = 0;
 
 	for (int i = 0; i < candidates.size(); i++) {
