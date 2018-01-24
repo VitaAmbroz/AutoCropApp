@@ -6,6 +6,7 @@
 using namespace std;
 using namespace cv;
 
+/* It is necessary to have VLFeat correctly downloaded - dependencies in CMakeLists.txt */
 extern "C" {
 #include "vl/generic.h"
 #include "vl/slic.h"

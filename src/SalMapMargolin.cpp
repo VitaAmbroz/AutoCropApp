@@ -1,11 +1,10 @@
 /*
  * This implementation of saliency map (Margolin, R.; Tal, A.; Zelnik-Manor, L.: What Makes a Patch Distinct?, 2013)
  * was inspired from https://github.com/swook/autocrop/tree/master/src/saliency
- * and uses functions from open source library VLFEAT.
+ * and uses functions from open source library VLFeat.
  */
 
 #include "SalMapMargolin.h"
-#include <numeric>
 
 using namespace std;
 using namespace cv;
@@ -137,7 +136,7 @@ void SalMapMargolin::_getSLICSegments(const Mat& img, std::vector<vl_uint32>& se
 
 	// Run SLIC code from vlfeat
 	vl_size regionSize = 50, minRegionSize = 35;
-	printf("\nSLIC parameters:\n- regionSize: %llu\n- minRegionSize: %llu\n", regionSize, minRegionSize);
+	///printf("\nSLIC parameters:\n- regionSize: %llu\n- minRegionSize: %llu\n", regionSize, minRegionSize);
 
 	vl_slic_segment(segmentation.data(), img_vl, W, H, img.channels(),
 		regionSize, 800, minRegionSize);
@@ -202,9 +201,6 @@ float SalMapMargolin::_getSLICVariances(Mat& grey, std::vector<vl_uint32>& segme
 	std::sort(vars_sorted.begin(), vars_sorted.end());
 	return vars_sorted[n - n / 4];
 }
-
-
-
 
 
 
@@ -284,7 +280,7 @@ Mat SalMapMargolin::_getPatternDistinct(const Mat& img, std::vector<vl_uint32>& 
 	_distpatches.shrink_to_fit();
 	auto distpatches = Mat(i, 9, CV_8U, _distpatches.data());
 	auto patches = Mat(X*Y, 9, CV_8U, _patches.data());
-	printf("%.1f%% of patches considered distinct\n", 100.f * (float)i / (float)(X*Y));
+	///printf("%.1f%% of patches considered distinct\n", 100.f * (float)i / (float)(X*Y));
 
 
 
@@ -498,7 +494,7 @@ Mat SalMapMargolin::getSaliency(const Mat& img)
 			segmentation_4.end(), 0, [&](vl_uint32 b, vl_uint32 n) {
 				return n > b ? n : b;
 			}) + 1;
-	printf("\nCalculated %d, %d, %d superpixels.\n", spxl_n_1, spxl_n_2, spxl_n_4);
+	///printf("\nCalculated %d, %d, %d superpixels.\n", spxl_n_1, spxl_n_2, spxl_n_4);
 	auto spxl_vars_1  = std::vector<float>(spxl_n_1);
 	auto spxl_vars_2  = std::vector<float>(spxl_n_2);
 	auto spxl_vars_4  = std::vector<float>(spxl_n_4);

@@ -3,16 +3,18 @@
 using namespace std;
 using namespace cv;
 
-// definition of constant used to get max distance for translating forkSA to forkSB
+// definition of constant to get max distance for translating forkSA to forkSB
+// 0 <=> generate forksB over all image
+// Big value <=> generate forksB close
 const int TRANSLATION_DIVIDER = 30;
 
 
 SalMapStentiford::SalMapStentiford(cv::Mat img) {
-	this->image = img;
-	this->salMap = Mat(img.rows, img.cols, CV_8UC1);
+	this->originalImage = img;
+	this->salMap = Mat();
 
-	this->hTranslation = (int)(img.cols / TRANSLATION_DIVIDER);
-	this->vTranslation = (int)(img.rows / TRANSLATION_DIVIDER);
+	this->hTranslation = (TRANSLATION_DIVIDER != 0) ? (int)(img.cols / TRANSLATION_DIVIDER) : img.cols;
+	this->vTranslation = (TRANSLATION_DIVIDER != 0) ? (int)(img.rows / TRANSLATION_DIVIDER) : img.rows;
 }
 
 
@@ -27,6 +29,20 @@ SalMapStentiford::SalMapStentiford(cv::Mat img) {
 void SalMapStentiford::generateSalMap(int m, int eps, int t, float treshold) {
 	srand((unsigned int)time(NULL));
 
+	// big images would be scaled down, here is limit for big images
+	const float maxSize = 500.f;
+	if (this->originalImage.cols > (int)maxSize || this->originalImage.rows > (int)maxSize) {
+		// Scale image to have not more than maxSize pixels on its larger
+		float scale = (float)max(this->originalImage.cols, this->originalImage.rows) / maxSize;
+		resize(this->originalImage, this->image, Size(this->originalImage.cols / scale, this->originalImage.rows / scale));
+	}
+	else { // image is small, no need to scale it down
+		this->image = this->originalImage;
+	}
+
+
+	// Mat for saving saliency values each pixel
+	cv::Mat salmap_scaled = Mat(this->image.rows, this->image.cols, CV_8UC1);
 	for (int xx = 0; xx < this->image.cols; xx++) {
 		for (int yy = 0; yy < this->image.rows; yy++) {
 			int pxAttentionScore = 0;
@@ -64,8 +80,17 @@ void SalMapStentiford::generateSalMap(int m, int eps, int t, float treshold) {
 				pxAttentionScore = 255;
 
 			// save attention score to output saliency map
-			this->salMap.data[yy * this->image.cols + xx] = pxAttentionScore;
+			salmap_scaled.data[yy * this->image.cols + xx] = pxAttentionScore;
 		}
+	}
+
+	// If image has been scaled down, now scale it back
+	if (this->originalImage.cols > (int)maxSize || this->originalImage.rows > (int)maxSize) {
+		// Scale back to original size for further processing
+		resize(salmap_scaled, this->salMap, this->originalImage.size());
+	}
+	else {  // image has not been scaled down, no need to scal back
+		this->salMap = salmap_scaled;
 	}
 }
 
@@ -135,6 +160,7 @@ bool SalMapStentiford::mismatchPixels(int x1, int y1, int x2, int y2, float tres
 std::vector<std::array<int, 2>> SalMapStentiford::createForkSA(int x1, int y1, int m, int eps) {
 	std::vector<std::array<int, 2>> forkSA;
 
+	// limits for neighbourhood
 	int minX = x1 - eps;
 	int maxX = x1 + eps;
 	int minY = y1 - eps;
@@ -145,9 +171,11 @@ std::vector<std::array<int, 2>> SalMapStentiford::createForkSA(int x1, int y1, i
 	maxY = (maxY < this->image.rows) ? maxY : (this->image.rows - 1);
 
 	for (int i = 0; i < m; i++) {
+		// generate random coordinates of defined neighbourhood
 		int newX = minX + (rand() % (1 + maxX - minX));
 		int newY = minY + (rand() % (1 + maxY - minY));
 
+		// save coordinates of pixel to forkSA
 		std::array<int, 2> xy = {newX, newY};
 		forkSA.push_back(xy);
 	}
@@ -165,15 +193,18 @@ std::vector<std::array<int, 2>> SalMapStentiford::createForkSA(int x1, int y1, i
 std::vector<std::array<int, 2>> SalMapStentiford::createForkSB(std::vector<std::array<int, 2>> sa, int m) {
 	std::vector<std::array<int, 2>> forkSB;
 
+	// translation lengths in horizontal and vertical coordinates
 	int deltaX = 1 + (rand() % this->hTranslation);
 	int deltaY = 1 + (rand() % this->vTranslation);
 
+	// it can be translated in all directions
 	int minusChanceX = rand() % 100;
 	int minusChanceY = rand() % 100;
 	if (minusChanceX < 50) deltaX *= -1;
 	if (minusChanceY < 50) deltaY *= -1;
 
 	for (int i = 0; i < m; i++) {
+		// save coordinates of pixel to forkSB
 		std::array<int, 2> xy = { this->checkMaxMinWidth(std::get<0>(sa.at(i)) + deltaX),
 								this->checkMaxMinHeight(std::get<1>(sa.at(i)) + deltaY) };
 		forkSB.push_back(xy);

@@ -15,6 +15,7 @@ public:
 	void generateSalMap(int m, int eps, int t, float treshold);
 
 private:
+	cv::Mat originalImage;
 	cv::Mat image;
 	int hTranslation;
 	int vTranslation;
@@ -24,8 +25,6 @@ private:
 	std::vector<std::array<int, 2>> createForkSB(std::vector<std::array<int, 2>> sa, int m);
 	int checkMaxMinWidth(int pxX);
 	int checkMaxMinHeight(int pxY);
-	//int** createForkSA(int x1, int y1, int m, int eps);
-	//int** createForkSB(int** sa);
 };
 
 #endif //__SALMAPSTENTIFORD_H__

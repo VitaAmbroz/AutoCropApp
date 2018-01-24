@@ -14,6 +14,8 @@ public:
 	AutoCropVCBSCP(cv::Mat img, cv::Mat salMap);
 	cv::Mat gradient;
 
+	/* TODO obecnou metodu, ktera bude navrhovat ramecky ruzne velikosti a pomeru stran */
+	void randomWH(int iterations, int w, int h);
 	void randomWalk(int iterations, float zoomFactor);
 	int getX();
 	int getY();
@@ -22,8 +24,8 @@ public:
 
 private:
 	cv::Mat getGradient(cv::Mat img);
-	uint32_t computeSaliencyEnergy(int x1, int y1, int width, int height);
-	uint32_t computeBoundarySimplicity(int x1, int y1, int width, int height);
+	uint32_t computeSaliencyEnergy(int x1, int y1, int w, int h);
+	uint32_t computeBoundarySimplicity(int x1, int y1, int w, int h);
 
 	int x;
 	int y;

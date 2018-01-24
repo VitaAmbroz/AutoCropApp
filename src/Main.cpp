@@ -50,17 +50,20 @@ int main(int argc, char** argv)
 	// create instance of class for generating saliency map(Stentiford, F.: Attention-based auto image cropping, 2007)
 	SalMapStentiford StentifordSM(img);
 	// generate saliency map
+	cout << "\nGenerating saliency map by Stentiford..." << endl;
 	StentifordSM.generateSalMap(3, 1, 120, 50);
 	showImageAuto("StentifordSalMap", StentifordSM.salMap);
 	
 	// create instance of finding best cropping window by attention based method
 	AttentionBased abStentiford(StentifordSM.salMap);
 	
+	cout << "\nLooking for the best cropping window..." << endl;
 	/* methods for finding best window with Stentiford method */
-	//abStentiford.brutalForceWH(4, 4, 640, 480);
-	abStentiford.brutalForceZoomFactor(10, 10, 2);
-	//abStentiford.zoomFactorWalk(4, 4, 1.5, 2.0, 0.1);
-	//abStentiford.randomWalk(5000, 2);
+	//abStentiford.brutalForceWH(1, 1, 200, 150);
+	//abStentiford.brutalForceZoomFactor(1, 1, 2);
+	//abStentiford.zoomFactorWalk(1, 1, 1.25, 2.0, 0.1);
+	abStentiford.randomZFWalk(4000, 1.5);
+	//abStentiford.randomWalk(4000, 200, 100);
 	
 	// define region of interest for cropping
 	cv::Rect roi(abStentiford.getX(), abStentiford.getY(), abStentiford.getWidth(), abStentiford.getHeight());
@@ -73,15 +76,18 @@ int main(int argc, char** argv)
 	/***************************************************/
 	/* Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models */
 	// create instance for generating saliency map(Margolin, R.; Tal, A.; Zelnik-Manor, L.: What Makes a Patch Distinct?, 2013)
+	cout << "\nGenerating saliency map by Margolin..." << endl;
 	SalMapMargolin MargolinSM(img);
 	showImageAuto("MargolinSalMap", MargolinSM.salMap);
 	
 	// instance of method "Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models"
 	AutoCropVCBSCP ac2(img, MargolinSM.salMap);
-	//showImageAuto("ImageGradient", ac2.gradient);
+	showImageAuto("ImageGradient", ac2.gradient);
 	
+	cout << "\nLooking for the best cropping window..." << endl;
 	/* methods for finding best window */
-	ac2.randomWalk(10000, 1.5);
+	ac2.randomWalk(6000, 1.5);
+	//ac2.randomWH(6000, 900, 600);
 	
 	// Define region of interest for cropping
 	cv::Rect roi2(ac2.getX(), ac2.getY(), ac2.getWidth(), ac2.getHeight());
@@ -109,7 +115,7 @@ int main(int argc, char** argv)
  */
 void showImageAuto(std::string title, const Mat& img)
 {
-	std::cout << "\nShowing image: \"" << title << "\"." << std::endl;
+	std::cout << "Showing image: \"" << title << "\"." << std::endl;
 	namedWindow(title, CV_WINDOW_AUTOSIZE);
 	imshow(title, img);
 	cv::waitKey(0);

@@ -14,11 +14,12 @@ public:
 	int getY();
 	int getWidth();
 	int getHeight();
-	void zoomFactorWalk(int hStep, int vStep, float from, float to, float step);
-	void randomWalk(int iterations, float maxZoomFactor);
+	void brutalForceWH(int hStep, int vStep, int w, int h);
 	void brutalForceZoomFactor(int hStep, int vStep, float zFactor);
-	void brutalForceWH(int hStep, int vStep, int width, int height);
-	void computeMaxScore(int x1, int y1, int width, int height);
+	void zoomFactorWalk(int hStep, int vStep, float from, float to, float step);
+	void randomZFWalk(int iterations, float maxZoomFactor);
+	void randomWalk(int iterations, int minWidth, int minHeight);
+	void computeMaxScore(int x1, int y1, int w, int h);
 
 private:
 	int x;
@@ -27,7 +28,6 @@ private:
 	int height;
 	double bestScore;
 	cv::Mat image;
-	uint8_t* pixelPtr;
 };
 
 #endif //__ATTENTIONBASED_H__
