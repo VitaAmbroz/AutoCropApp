@@ -1,5 +1,7 @@
 #include <iostream>
+#include <string>
 #include <opencv2/opencv.hpp>
+
 #include "SalMapStentiford.h"
 #include "SalMapMargolin.h"
 #include "AttentionBased.h"
@@ -9,45 +11,39 @@ using namespace std;
 using namespace cv;
 
 /* prototypes of functions */
-int IttiSalMapCrop(string fileName, cv::Mat img);
-int AchantaSalMapCrop(string fileName, cv::Mat img);
 void showImageAuto(std::string title, const Mat& img);
 
-int main()
+/* constants for notices */
+const std::string Usage = "Usage: ./AutoCrop pathToImage";
+const std::string BadArguments = "Bad number of input arguments.";
+
+
+int main(int argc, char** argv)
 {
-	// name of file
-	std::string fileName = "zajic300";
-	
-	// open original Image
-	cv::Mat img = cv::imread("img/" + fileName + "/" + fileName + ".jpg", CV_LOAD_IMAGE_COLOR);
-	if (img.empty()) {
-		std::cout << "Function imread() failed to open target image!" << std::endl;
+	/* input way for path of image */
+	// check arguments and save path to image
+	std::string filePath = "";
+	if (argc == 2)
+		filePath = argv[1];
+	else {
+		cerr << BadArguments << endl << Usage << endl;
 		return -1;
 	}
+
+	/* static way for path of image */
+	//std::string fileName = "zajic2";
+	//std::string filePath = "img/" + fileName + "/" + fileName + ".jpg";
+
+	// load original Image
+	cv::Mat img = cv::imread(filePath, CV_LOAD_IMAGE_COLOR);
+	if (img.empty()) {
+		cerr << "Function imread() failed to open target image!" << endl;
+		return -1;
+	}
+
 	// show original image
 	showImageAuto("original", img);
 
-	/***************************************************/
-	/* Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models */
-	// create instance for generating saliency map(Margolin, R.; Tal, A.; Zelnik-Manor, L.: What Makes a Patch Distinct?, 2013)
-	
-	SalMapMargolin MargolinSM(img);
-	showImageAuto("MargolinSalMap", MargolinSM.salMap);
-
-	/*
-	// instance of method "Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models"
-	AutoCropVCBSCP ac2(img, MargolinSM.salMap);
-	// Methods for finding best window
-	ac2.randomWalk(5000, 1.5);
-
-
-	// Define region of interest for cropping
-	cv::Rect roi2(ac2.getX(), ac2.getY(), ac2.getWidth(), ac2.getHeight());
-	// Crop the original image to the defined roi
-	cv::Mat cropVCBSCP = img(roi2);
-	// Show cropped result in window
-	showImageAuto("VCBSCPmodelsCrop", cropVCBSCP);
-	*/
 
 	/***************************************************/
 	/* Attention based auto image cropping */
@@ -56,106 +52,61 @@ int main()
 	// generate saliency map
 	StentifordSM.generateSalMap(3, 1, 120, 50);
 	showImageAuto("StentifordSalMap", StentifordSM.salMap);
-
-	// Create instance of finding best cropping window by attention based method
+	
+	// create instance of finding best cropping window by attention based method
 	AttentionBased abStentiford(StentifordSM.salMap);
-
-	// Methods for finding best window with Stentiford method
+	
+	/* methods for finding best window with Stentiford method */
 	//abStentiford.brutalForceWH(4, 4, 640, 480);
-	//abStentiford.brutalForceZoomFactor(1, 1, 2);
+	abStentiford.brutalForceZoomFactor(10, 10, 2);
 	//abStentiford.zoomFactorWalk(4, 4, 1.5, 2.0, 0.1);
-	abStentiford.randomWalk(5000, 1.2);
-
-	// Define region of interest for cropping
+	//abStentiford.randomWalk(5000, 2);
+	
+	// define region of interest for cropping
 	cv::Rect roi(abStentiford.getX(), abStentiford.getY(), abStentiford.getWidth(), abStentiford.getHeight());
-	// Crop the original image to the defined roi
+	// crop the original image to the defined roi
 	cv::Mat cropStentiford = img(roi);
-	// Show cropped result in window
+	// show cropped result in window
 	showImageAuto("StentifordCrop", cropStentiford);
 
 
+	/***************************************************/
+	/* Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models */
+	// create instance for generating saliency map(Margolin, R.; Tal, A.; Zelnik-Manor, L.: What Makes a Patch Distinct?, 2013)
+	SalMapMargolin MargolinSM(img);
+	showImageAuto("MargolinSalMap", MargolinSM.salMap);
+	
+	// instance of method "Automatic Image Cropping using Visual Composition, Boundary Simplicity and Content Preservation Models"
+	AutoCropVCBSCP ac2(img, MargolinSM.salMap);
+	//showImageAuto("ImageGradient", ac2.gradient);
+	
+	/* methods for finding best window */
+	ac2.randomWalk(10000, 1.5);
+	
+	// Define region of interest for cropping
+	cv::Rect roi2(ac2.getX(), ac2.getY(), ac2.getWidth(), ac2.getHeight());
+	// Crop the original image to the defined roi
+	cv::Mat cropVCBSCP = img(roi2);
+	// Show cropped result in window
+	showImageAuto("VCBSCPmodelsCrop", cropVCBSCP);
 
-	// experiments with Itti(1998) algorithm for saliency map
-	//if (IttiSalMapCrop(fileName, img) < 0)
-	//	return -1;
-	//// experiments with Achanta(CVPR 2009) algorithm for saliency map
-	//if (AchantaSalMapCrop(fileName, img) < 0)
-	//	return -1;
 
-	// Save cropped images
-	//cv::imwrite("croppedVCBSCP" + fileName + ".jpg", cropVCBSCP);
-	//cv::imwrite("croppedStentiford" + fileName + ".jpg", cropStentiford);
-	cv::imwrite("img/" + fileName + "/" + "StentifordSM" + fileName + ".jpg", StentifordSM.salMap);
+	/* results could be saved - for saving define custom paths */
+	//cv::imwrite("img/" + fileName + "/" + "gradient" + fileName + ".jpg", ac2.gradient);
 	//cv::imwrite("img/" + fileName + "/" + "MargolinSM" + fileName + ".jpg", MargolinSM.salMap);
+	//cv::imwrite("img/" + fileName + "/" + "StentifordSM" + fileName + ".jpg", StentifordSM.salMap);
+	//cv::imwrite("img/" + fileName + "/" + "cropStentiford" + fileName + ".jpg", cropStentiford);
+	//cv::imwrite("img/" + fileName + "/" + "crop2" + fileName + ".jpg", cropVCBSCP);
 
 	return 0;
 }
 
 
-
-int IttiSalMapCrop(string fileName, cv::Mat img) {
-	/*** ITTI Saliency map ***/
-	// open saliancy map generated by Itti method
-	cv::Mat salMap = cv::imread("img/" + fileName + "/itti_" + fileName + "_salmap.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-	if (salMap.empty()) {
-		std::cout << "Function imread() failed to open target image!" << std::endl;
-		return -1;
-	}
-
-	// Create instance of finding best cropping window by attention based method
-	AttentionBased abItti(salMap);
-
-	// Methods for finding best window
-	//abItti.brutalForceWH(4, 4, 640, 480);
-	abItti.brutalForceZoomFactor(1, 1, 1.5);
-	//abItti.zoomFactorWalk(4, 4, 1.5, 2.0, 0.1);
-	//abItti.randomWalk(2000, 1.5);
-
-	// Define region of interest for cropping
-	cv::Rect roi(abItti.getX(), abItti.getY(), abItti.getWidth(), abItti.getHeight());
-	// Crop the original image to the defined roi
-	cv::Mat cropItti = img(roi);
-	// Show cropped result in window
-	showImageAuto("IttiCrop", cropItti);
-	// save cropped image
-	cv::imwrite("croppedItti" + fileName + ".jpg", cropItti);
-
-	return 0;
-}
-
-
-int AchantaSalMapCrop(string fileName, cv::Mat img) {
-	/*** Achanta CVPR 2009 Saliency map ***/
-	// open saliancy map generated by method from CVPR
-	cv::Mat salMap = cv::imread("img/" + fileName + "/" + fileName + "_salmap.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-	if (salMap.empty()) {
-		std::cout << "Function imread() failed to open target image!" << std::endl;
-		return -1;
-	}
-
-	// Create instance of finding best cropping window by attention based method
-	AttentionBased abCvpr(salMap);
-
-	// Methods for finding best window
-	//abCvpr.brutalForceWH(2, 2, 640, 480);
-	abCvpr.brutalForceZoomFactor(1, 1, 1.5);
-	//abCvpr.zoomFactorWalk(4, 4, 1.5, 2.0, 0.1);
-	//abCvpr.randomWalk(2000, 1.5);
-
-	// Define region of interest for cropping
-	cv::Rect roi2(abCvpr.getX(), abCvpr.getY(), abCvpr.getWidth(), abCvpr.getHeight());
-	// Crop the original image to the defined roi
-	cv::Mat cropAchanta = img(roi2);
-	// Show cropped result in window
-	showImageAuto("AchantaCrop", cropAchanta);
-	// save cropped image
-	cv::imwrite("croppedAchanta" + fileName + ".jpg", cropAchanta);
-
-	return 0;
-}
-
-
-
+/**
+ * Function for showing window with image in real size
+ * @param title Name of the window
+ * @param img Image to be displayed
+ */
 void showImageAuto(std::string title, const Mat& img)
 {
 	std::cout << "\nShowing image: \"" << title << "\"." << std::endl;
@@ -163,3 +114,75 @@ void showImageAuto(std::string title, const Mat& img)
 	imshow(title, img);
 	cv::waitKey(0);
 }
+
+
+
+
+/* Experiments with other saliency maps that was generated before */
+//// experiments with Itti(1998) algorithm for saliency map
+//if (IttiSalMapCrop(fileName, img) < 0)
+//	return -1;
+//// experiments with Achanta(CVPR 2009) algorithm for saliency map
+//if (AchantaSalMapCrop(fileName, img) < 0)
+//	return -1;
+
+//int IttiSalMapCrop(string fileName, cv::Mat img) {
+//	/*** ITTI Saliency map ***/
+//	// open saliancy map generated by Itti method
+//	cv::Mat salMap = cv::imread("img/" + fileName + "/IttiSM" + fileName + ".jpg", CV_LOAD_IMAGE_GRAYSCALE);
+//	if (salMap.empty()) {
+//		std::cout << "Function imread() failed to open target image!" << std::endl;
+//		return -1;
+//	}
+//
+//	// Create instance of finding best cropping window by attention based method
+//	AttentionBased abItti(salMap);
+//
+//	// Methods for finding best window
+//	//abItti.brutalForceWH(4, 4, 640, 480);
+//	abItti.brutalForceZoomFactor(10, 10, 2);
+//	//abItti.zoomFactorWalk(4, 4, 1.5, 2.0, 0.1);
+//	//abItti.randomWalk(10000, 1.5);
+//
+//	// Define region of interest for cropping
+//	cv::Rect roi(abItti.getX(), abItti.getY(), abItti.getWidth(), abItti.getHeight());
+//	// Crop the original image to the defined roi
+//	cv::Mat cropItti = img(roi);
+//	// Show cropped result in window
+//	showImageAuto("IttiCrop", cropItti);
+//	// save cropped image
+//	cv::imwrite("croppedItti" + fileName + ".jpg", cropItti);
+//
+//	return 0;
+//}
+
+
+//int AchantaSalMapCrop(string fileName, cv::Mat img) {
+//	/*** Achanta CVPR 2009 Saliency map ***/
+//	// open saliancy map generated by method from CVPR
+//	cv::Mat salMap = cv::imread("img/" + fileName + "/AchantaSM" + fileName + ".jpg", CV_LOAD_IMAGE_GRAYSCALE);
+//	if (salMap.empty()) {
+//		std::cout << "Function imread() failed to open target image!" << std::endl;
+//		return -1;
+//	}
+//
+//	// Create instance of finding best cropping window by attention based method
+//	AttentionBased abCvpr(salMap);
+//
+//	// Methods for finding best window
+//	//abCvpr.brutalForceWH(2, 2, 640, 480);
+//	abCvpr.brutalForceZoomFactor(10, 10, 2);
+//	//abCvpr.zoomFactorWalk(4, 4, 1.5, 2.0, 0.1);
+//	//abCvpr.randomWalk(2000, 1.5);
+//
+//	// Define region of interest for cropping
+//	cv::Rect roi2(abCvpr.getX(), abCvpr.getY(), abCvpr.getWidth(), abCvpr.getHeight());
+//	// Crop the original image to the defined roi
+//	cv::Mat cropAchanta = img(roi2);
+//	// Show cropped result in window
+//	showImageAuto("AchantaCrop", cropAchanta);
+//	// save cropped image
+//	cv::imwrite("croppedAchanta" + fileName + ".jpg", cropAchanta);
+//
+//	return 0;
+//}
