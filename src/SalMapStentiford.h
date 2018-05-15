@@ -1,18 +1,34 @@
+/**
+ * Bachelor thesis: Algorithms for automatic image cropping
+ * VUT FIT 2018
+ * Author: Vít Ambrož (xambro15@stud.fit.vutbr.cz)
+ * Supervisor: Doc. Ing. Martin Čadík, Ph. D.
+ * File: SalMapStentiford.h
+ * Github repository: https://github.com/VitaAmbroz/AutoCropApp
+ */
+
 #ifndef __SALMAPSTENTIFORD_H__
 #define __SALMAPSTENTIFORD_H__
-#include <opencv2/opencv.hpp>
+
 #include <array>
 #include <cmath>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 
 using namespace std;
 using namespace cv;
+
+// definition of constant to get max distance for translating forkSA to forkSB
+// 0 <=> generate forksB over all image X Big value <=> generate forksB close
+static const int TRANSLATION_DIVIDER = 10;
+
 
 class SalMapStentiford
 {
 public:
 	SalMapStentiford(cv::Mat img);
 	cv::Mat salMap;
-	void generateSalMap(int m, int eps, int t, float treshold);
+	void generateSalMap(int m, int eps, int t, float treshold); /* TODO constructor with default parameters */
 
 private:
 	cv::Mat originalImage;

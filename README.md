@@ -1,23 +1,28 @@
-# Webová aplikace pro automatický ořez fotografií
+# Algoritmy pro automatický ořez fotografií (Algorithms for Automatic Image Cropping)
 
-Prozatím konzolová aplikace C++, ve které jsou implementovány vybrané metody automatického ořezu obrazu. V současné chvíli je postupně realizována implementace jednotlivých částí metod popsaných v těchto článcích [1,2].
+Konzolová aplikace v C++, ve které jsou implementovány vybrané algoritmy automatického ořezu obrazu. Pro každý z těchto algoritmů byly vytvořeny různé metody způsobu výběru nejlepšího rámečku ořezu. Většinu těchto metod lze spustit z příkazové řádky pomocí příslušných parametrů, případně vlastním experimentováním se zdrojovými kódy.
 
     [1] Stentiford, F. : Attention Based Auto Image Cropping.
-    In Workshop on Computational Attention and Applications (WCAA 2007), 2007.
+    In ICVS Workshop on Computation Attention and Applications, 2007.
     
-    [2] Fang, C.; Lin, Z.; Mech, R.; aj.
+    [2] Fang, C.; Lin, Z.; Mech, R.; aj.:
     Automatic Image Cropping Using Visual Composition, Boundary Simplicity and Content Preservation Models.
     In Proceedings of the 22Nd ACM International Conference on Multimedia, 2014.
 
+    [3] Suh, B.; Ling, H.; Bederson, B. B.; aj.:
+    Automatic Thumbnail Cropping and its Effectiveness.
+    In Proceedings of the 16th Annual ACM Symposium on User Interface Software and Technology, 2003.
+
 Aplikace používá tyto nástroje a knihovny, které je nezbytné mít správně nainstalovány.
-* <a href=https://cmake.org>CMake</a> - `sudo apt-get install cmake`
-* <a href=https://opencv.org>OpenCV</a>
-* <a href=http://www.vlfeat.org>VLFeat</a>
+* <a href=https://cmake.org>CMake</a> - použitá verze 3.11.1
+* <a href=https://opencv.org>OpenCV</a> - použitá verze 3.4.1
+* <a href=http://www.vlfeat.org>VLFeat</a> - použitá verze 0.9.21
+* <a href=https://www.boost.org/>Boost</a> - použitá verze 1.67.0
 
 ## Sestavení
-Pro sestavení je použit nástroj CMake. V souboru CMakeLists.txt jsou definována pravidla pro vytvoření souborů potřebných k překladu a sestavení. Je zde nutné upravit cestu pro použití knihovny VLFeat, tedy nastavit ji na adresář, kde jsou soubory, které vzniknou po rozbalení této knihovny (více na http://www.vlfeat.org)
+Pro sestavení je použit nástroj CMake. V souboru CMakeLists.txt jsou definována pravidla pro vytvoření souborů potřebných k překladu a sestavení. Je zde nutné upravit cestu pro použití knihovny VLFeat, respektive nastavit ji na adresář, kde jsou soubory, které vzniknou po rozbalení této knihovny (více na http://www.vlfeat.org). Pokud bude stažen tento repozitář, stačí pouze rozbalit soubor vlfeat.zip a bude ta dodržena cesta uvedená v souboru CMakeLists.txt.
 
-Sestavení lze po stažení tohoto repozitáře dosáhnout například takto:
+Sestavení aplikace lze po stažení tohoto repozitáře dosáhnout například takto:
 
     $ cmake .
     $ make

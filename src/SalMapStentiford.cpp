@@ -1,13 +1,13 @@
+/**
+ * Bachelor thesis: Algorithms for automatic image cropping
+ * VUT FIT 2018
+ * Author: Vít Ambrož (xambro15@stud.fit.vutbr.cz)
+ * Supervisor: Doc. Ing. Martin Čadík, Ph. D.
+ * File: SalMapStentiford.cpp
+ * Github repository: https://github.com/VitaAmbroz/AutoCropApp
+ */
+
 #include "SalMapStentiford.h"
-
-using namespace std;
-using namespace cv;
-
-// definition of constant to get max distance for translating forkSA to forkSB
-// 0 <=> generate forksB over all image
-// Big value <=> generate forksB close
-const int TRANSLATION_DIVIDER = 30;
-
 
 SalMapStentiford::SalMapStentiford(cv::Mat img) {
 	this->originalImage = img;
@@ -16,7 +16,6 @@ SalMapStentiford::SalMapStentiford(cv::Mat img) {
 	this->hTranslation = (TRANSLATION_DIVIDER != 0) ? (int)(img.cols / TRANSLATION_DIVIDER) : img.cols;
 	this->vTranslation = (TRANSLATION_DIVIDER != 0) ? (int)(img.rows / TRANSLATION_DIVIDER) : img.rows;
 }
-
 
 
 /**
@@ -29,25 +28,28 @@ SalMapStentiford::SalMapStentiford(cv::Mat img) {
 void SalMapStentiford::generateSalMap(int m, int eps, int t, float treshold) {
 	srand((unsigned int)time(NULL));
 
-	// big images would be scaled down, here is limit for big images
+	// big images would be scaled down - max 500px width or height
 	const float maxSize = 500.f;
-	if (this->originalImage.cols > (int)maxSize || this->originalImage.rows > (int)maxSize) {
-		// Scale image to have not more than maxSize pixels on its larger
-		float scale = (float)max(this->originalImage.cols, this->originalImage.rows) / maxSize;
-		resize(this->originalImage, this->image, Size(this->originalImage.cols / scale, this->originalImage.rows / scale));
-	}
-	else { // image is small, no need to scale it down
+	double scale = maxSize / max(this->originalImage.cols, this->originalImage.rows);
+
+	if (scale >= 1.f) {	// dont resize
 		this->image = this->originalImage;
+	}
+	else { // image is large, resize it to max 800px of width or height
+		// use INTER_AREA to resampling using pixel area relation
+		cv::resize(this->originalImage, this->image, Size(), scale, scale, cv::INTER_AREA);
 	}
 
 
 	// Mat for saving saliency values each pixel
 	cv::Mat salmap_scaled = Mat(this->image.rows, this->image.cols, CV_8UC1);
+
+	// loop and computation for every single pixel of original image
 	for (int xx = 0; xx < this->image.cols; xx++) {
 		for (int yy = 0; yy < this->image.rows; yy++) {
 			int pxAttentionScore = 0;
 			bool forkMisMatch = false;
-
+		
 			for (int i = 0; i < t; i++) {
 				//int** forkSA = this->createForkSA(xx, yy, this->mPixelsInFork, eps);
 				//int** forkSB = this->createForkSB(forkSA);
@@ -87,11 +89,14 @@ void SalMapStentiford::generateSalMap(int m, int eps, int t, float treshold) {
 	// If image has been scaled down, now scale it back
 	if (this->originalImage.cols > (int)maxSize || this->originalImage.rows > (int)maxSize) {
 		// Scale back to original size for further processing
-		resize(salmap_scaled, this->salMap, this->originalImage.size());
+		cv::resize(salmap_scaled, this->salMap, this->originalImage.size());
 	}
-	else {  // image has not been scaled down, no need to scal back
+	else {  // image has not been scaled down, no need to scale back
 		this->salMap = salmap_scaled;
 	}
+
+	// normalize it in range [0,255]
+	cv::normalize(this->salMap, this->salMap, 0, 255, NORM_MINMAX, CV_8UC1);
 }
 
 
@@ -109,9 +114,9 @@ bool SalMapStentiford::mismatchPixels(int x1, int y1, int x2, int y2, float tres
 	int channels = this->image.channels();
 
 	// L1 norm
-	/*double Fxy = abs(this->image.data[channels * (this->image.cols * y1 + x1) + 0] - this->image.data[channels * (this->image.cols * y2 + x2) + 0]) +
-		abs(this->image.data[channels * (this->image.cols * y1 + x1) + 1] - this->image.data[channels * (this->image.cols * y2 + x2) + 1]) +
-		abs(this->image.data[channels * (this->image.cols * y1 + x1) + 2] - this->image.data[channels * (this->image.cols * y2 + x2) + 2]);*/
+	//double Fxy = abs(this->image.data[channels * (this->image.cols * y1 + x1) + 0] - this->image.data[channels * (this->image.cols * y2 + x2) + 0]) +
+	//	abs(this->image.data[channels * (this->image.cols * y1 + x1) + 1] - this->image.data[channels * (this->image.cols * y2 + x2) + 1]) +
+	//	abs(this->image.data[channels * (this->image.cols * y1 + x1) + 2] - this->image.data[channels * (this->image.cols * y2 + x2) + 2]);
 	
 	// L2 norm
 	/*double Fxy = sqrt(pow(this->image.data[channels * (this->image.cols * y1 + x1) + 0] - this->image.data[channels * (this->image.cols * y2 + x2) + 0], 2) +
