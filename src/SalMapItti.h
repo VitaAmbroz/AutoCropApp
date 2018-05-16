@@ -26,13 +26,18 @@ const int DEFAULT_STEP_LOCAL = 8;
 class SalMapItti
 {
 public:
+	// default constructor
 	SalMapItti(cv::Mat src);
+	// method for generating output saliency map
 	cv::Mat SMGetSM(cv::Mat src);
+	// matrix of saliency map
 	cv::Mat salMap;
 
 private:
+	// matrixes for default color and intensity channels
 	cv::Mat R, G, B, I;
 
+	// matrixes for gabor kernels
 	cv::Mat GaborKernel0;
 	cv::Mat GaborKernel45;
 	cv::Mat GaborKernel90;
@@ -59,6 +64,7 @@ private:
 	double SMAvgLocalMax(cv::Mat src);
 };
 
+// constants for gabor kernels
 static double GaborKernel_0[9][9] = {
 	{ 1.85212E-06, 1.28181E-05, -0.000350433, -0.000136537, 0.002010422, -0.000136537, -0.000350433, 1.28181E-05, 1.85212E-06 },
 	{ 2.80209E-05, 0.000193926, -0.005301717, -0.002065674, 0.030415784, -0.002065674, -0.005301717, 0.000193926, 2.80209E-05 },

@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 		AutocropSuh suh(itti.salMap);
 
 		// use default threshold or threshold specified in arguments
-		const float THRESHOLD = 0.66f;
+		const float THRESHOLD = 0.6f;
 		float tr = (arguments.isThreshold()) ? arguments.getThreshold() : THRESHOLD;
 
 		if (arguments.isWH())
@@ -116,7 +116,8 @@ int main(int argc, char** argv)
 		else if (arguments.isWHratio())
 			suh.bruteForceWHratio(arguments.getWidthRatio(), arguments.getHeightRatio(), tr, HSTEP, VSTEP);
 		else
-			suh.bruteForceGeneral(tr);
+			suh.greedyGeneral(tr);
+			//suh.bruteForceGeneral(tr);
 
 		// define region of interest for cropping
 		cv::Rect roi(suh.getX(), suh.getY(), suh.getWidth(), suh.getHeight());

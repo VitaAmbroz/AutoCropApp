@@ -7,9 +7,17 @@
  * Github repository: https://github.com/VitaAmbroz/AutoCropApp
  */
 
+/*
+ * This implementation of saliency map (Itti, L.; Koch, C.; Niebur, E.; A Model of Saliency-Based Visual Attention for Rapid Scene Analysis, 1998)
+ * was inspired by https://github.com/akisato-/saliencyMap.
+ */
+
 #include "SalMapItti.h"
 
-
+/**
+ * Default constructor
+ * @param src Original image
+ */
 SalMapItti::SalMapItti(cv::Mat src) {
 	// set Gabor Kernel (9x9)
 	this->GaborKernel0 = cv::Mat(9, 9, CV_32FC1, GaborKernel_0);
@@ -21,6 +29,12 @@ SalMapItti::SalMapItti(cv::Mat src) {
 	this->salMap = this->SMGetSM(src);
 }
 
+
+/**
+ * Main method for generating saliency map.
+ * @param src Original image
+ * @return Matrix of output saliency map
+ */
 cv::Mat SalMapItti::SMGetSM(cv::Mat src) {
 	int inputWidth = src.cols; // width of the image
 	int inputHeight = src.rows; // height of the image
@@ -83,6 +97,10 @@ cv::Mat SalMapItti::SMGetSM(cv::Mat src) {
 }
 
 
+/**
+ * Method for extracting color and intensity channels
+ * @param inputImage Original image
+ */
 void SalMapItti::SMExtractRGBI(cv::Mat inputImage) {
 	int height = inputImage.rows;
 	int width = inputImage.cols;
@@ -106,12 +124,20 @@ void SalMapItti::SMExtractRGBI(cv::Mat inputImage) {
 	cv::cvtColor(src, this->I, CV_BGR2GRAY);
 }
 
-
+/**
+ * Method for generating intensity feature maps
+ * @param dst Destination pyramid of intensity feature maps
+ */
 void SalMapItti::IFMGetFM(cv::Mat dst[6]) {
 	this->FMGaussianPyrCSD(this->I, dst);
 }
 
 
+/**
+ * Method for generating color feature maps
+ * @param RGFM Destination pyramid of red and green feature maps
+ * @param RGFM Destination pyramid of blue and yellow feature maps
+ */
 void SalMapItti::CFMGetFM(cv::Mat RGFM[6], cv::Mat BYFM[6]) {
 	int height = this->R.rows;
 	int width = this->R.cols;
@@ -149,6 +175,10 @@ void SalMapItti::CFMGetFM(cv::Mat RGFM[6], cv::Mat BYFM[6]) {
 }
 
 
+/**
+ * Method for generating orientation feature maps
+ * @param dst Destination pyramid of orientation feature maps
+ */
 void SalMapItti::OFMGetFM(cv::Mat dst[24]) {
 	// Create gaussian pyramid
 	cv::Mat GaussianI[9];
@@ -192,6 +222,12 @@ void SalMapItti::OFMGetFM(cv::Mat dst[24]) {
 }
 
 
+/**
+ * Method for generating intensity conspicuity map
+ * @param IFM Destination pyramid of intensity conspicuity maps
+ * @param size Size of original image
+ * @return Intensity conspicuity map
+ */
 cv::Mat SalMapItti::ICMGetCM(cv::Mat IFM[6], cv::Size size) {
 	const int num_FMs = 6;
 
@@ -210,6 +246,13 @@ cv::Mat SalMapItti::ICMGetCM(cv::Mat IFM[6], cv::Size size) {
 }
 
 
+/**
+ * Method for generating color conspicuity map
+ * @param CFM_RG Source pyramid of red and green feature maps
+ * @param CFM_BY Source pyramid of blue and yellow feature maps
+ * @param size Size of original image
+ * @return Color conspicuity map
+ */
 cv::Mat SalMapItti::CCMGetCM(cv::Mat CFM_RG[6], cv::Mat CFM_BY[6], cv::Size size) {
 	cv::Mat CCM_RG = ICMGetCM(CFM_RG, size);
 	cv::Mat CCM_BY = ICMGetCM(CFM_BY, size);
@@ -221,6 +264,12 @@ cv::Mat SalMapItti::CCMGetCM(cv::Mat CFM_RG[6], cv::Mat CFM_BY[6], cv::Size size
 }
 
 
+/**
+ * Method for generating orientation conspicuity map
+ * @param OFM Source pyramid of orientation feature maps
+ * @param size Size of original image
+ * @return Orientation conspicuity map
+ */
 cv::Mat SalMapItti::OCMGetCM(cv::Mat OFM[24], cv::Size size) {
 	int num_FMs_perAngle = 6;
 	int num_angles = 4;

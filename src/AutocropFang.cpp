@@ -223,7 +223,7 @@ void AutocropFang::randomGridCrop() {
 	// empirically set treshold for content preservation model to 0.7 (originally it was 0.4, but that very often misses main subjects)
 	const float SAL_TRESHOLD = 0.7f;
 	// number of ROIs that will be generated at each position in grid
-	const int ROI_NUMBER = 5;
+	const int ROI_NUMBER = 3;
 
 	for (int x1 = 0; x1 < endCol; x1 += hGrid) {
 		for (int y1 = 0; y1 < endRow; y1 += vGrid) {
