@@ -14,10 +14,10 @@ Konzolová aplikace v C++, ve které jsou implementovány vybrané algoritmy aut
     In Proceedings of the 16th Annual ACM Symposium on User Interface Software and Technology, 2003.
 
 Aplikace používá tyto nástroje a knihovny, které je nezbytné mít správně nainstalovány.
-* <a href=https://cmake.org>CMake</a> - použitá verze 3.11.1
-* <a href=https://opencv.org>OpenCV</a> - použitá verze 3.4.1
-* <a href=http://www.vlfeat.org>VLFeat</a> - použitá verze 0.9.21
-* <a href=https://www.boost.org/>Boost</a> - použitá verze 1.67.0
+* <a href=https://cmake.org>CMake</a> - použita verze 3.11.1
+* <a href=https://opencv.org>OpenCV</a> - použita verze 3.4.1
+* <a href=http://www.vlfeat.org>VLFeat</a> - použita verze 0.9.21
+* <a href=https://www.boost.org/>Boost</a> - použita verze 1.67.0
 
 ## Sestavení
 Pro sestavení je použit nástroj CMake. V souboru CMakeLists.txt jsou definována pravidla pro vytvoření souborů potřebných k překladu a sestavení. Je zde nutné upravit cestu pro použití knihovny VLFeat, respektive nastavit ji na adresář, kde jsou soubory, které vzniknou po rozbalení této knihovny (více na http://www.vlfeat.org). Pokud bude stažen tento repozitář, stačí pouze rozbalit soubor vlfeat.zip a bude ta dodržena cesta uvedená v souboru CMakeLists.txt.
