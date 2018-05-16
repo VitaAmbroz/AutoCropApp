@@ -43,7 +43,7 @@ Arguments::Arguments(int mArgc, char** mArgv) {
 
 
 /**
- * Function for parsing arguments and saving selected flags
+ * Function for parsing arguments and saving defined flags
  */ 
 void Arguments::parse() {
     // check if there is not too few arguments

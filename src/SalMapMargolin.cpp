@@ -19,7 +19,10 @@ using namespace std;
 using namespace cv;
 
 
-/* Constructor */
+/**
+ * Constructor
+ * @param img Original image
+ */
 SalMapMargolin::SalMapMargolin(cv::Mat img) {
 	this->image = img;
 	this->salMap = this->getSaliency(img);

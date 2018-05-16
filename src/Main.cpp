@@ -26,10 +26,25 @@ using namespace cv;
 /* prototypes of functions */
 void showImageAuto(std::string title, const Mat& img);
 
-/* constants for notices */
-// const std::string Usage = "Usage: ./AutoCrop pathToImage";
-// const std::string BadArguments = "Bad number of input arguments.";
-
+/* constant for help message */
+const char* HELP_MESSAGE = 
+"-----------------------------------------------------------------------------------\n"
+"This is application for automatic image cropping.\n"
+"See README or xambro15.pdf for detail description of implemented algorithms.\n\n"
+"Possible ways to run this application:\n"
+" $ ./autocrop -help  => Displays this message.\n"
+" $ ./autocrop imagePath  => Crops image with all algorithms(imagePath is path to source image).\n"
+" $ ./autocrop imagePath -suh  => Uses Suh's algorithm of automatic image cropping.\n"
+" $ ./autocrop imagePath -sten  => Uses Stentiford's algorithm of automatic image cropping.\n"
+" $ ./autocrop imagePath -fang  => Uses Fang's algorithm of automatic image cropping.\n"
+" $ ./autocrop imagePath -wh 600 400  => Defines width and height of final crop(in pixels).\n"
+" $ ./autocrop imagePath -scale 0.5  => Scales down original image to final crop(keeps aspect ratio).\n"
+" $ ./autocrop imagePath -whratio 16 9  => Defines aspect ratio of final crop(width:height).\n"
+" $ ./autocrop imagePath -suh -threshold 0.5  => Defines threshold used in Suh's algorithm.\n"
+" $ ./autocrop imagePath -w  => Disables showing windows of saliency maps and gradient.\n"
+" $ ./autocrop -train datasetPath  => Runs training of Visual Composition model. datasetPath is path to directory with images.\n\n"
+"xambro15@stud.fit.vutbr.cz, VUT FIT 2018\n"
+"-----------------------------------------------------------------------------------";
 
 int main(int argc, char** argv)
 {
@@ -37,8 +52,7 @@ int main(int argc, char** argv)
 	Arguments arguments(argc, argv);
 	// check if help message should be displayed
 	if (arguments.isHelpActivated()) {
-		/* TODO */
-		std::cout << "Showing help message" << std::endl;
+		std::cout << std::string(HELP_MESSAGE) << std::endl;
 		std::exit(EXIT_SUCCESS);
 	}
 	// check if parsing of arguments was correct 
@@ -120,7 +134,7 @@ int main(int argc, char** argv)
 		// generate saliency map(Stentiford, F.: Attention-based auto image cropping, 2007)
 		SalMapStentiford StentifordSM(img);
 		std::cout << "\nGenerating saliency map by Stentiford..." << std::endl;
-		StentifordSM.generateSalMap(3, 1, 120, 70);
+		StentifordSM.generateSalMap();
 		
 		if (arguments.isWindowsEnabled()) {
 			showImageAuto("StentifordSalMap", StentifordSM.salMap);
@@ -130,17 +144,19 @@ int main(int argc, char** argv)
 		std::cout << "\nLooking for the best cropping window..." << std::endl;
 		AutocropStentiford abStentiford(StentifordSM.salMap);
 
+		// value used to define minimum size for ROI in methods with random generator
+		const float DEFAULT_ZOOM_FACTOR = 1.5f; 
+
 		if (arguments.isWH())
 			abStentiford.brutalForceWH(arguments.getWidth(), arguments.getHeight(), HSTEP, VSTEP);
 		else if (arguments.isScale())
 			abStentiford.brutalForceZoomFactor((1.0f / arguments.getScale()), HSTEP, VSTEP);
-		else if (arguments.isWHratio()) {}
-			/* TODO */
+		else if (arguments.isWHratio())
+			abStentiford.randomWHratio(arguments.getWidthRatio(), arguments.getHeightRatio(), DEFAULT_ZOOM_FACTOR);
 		else 
-			abStentiford.brutalForceLimit(0.6f);
-		//abStentiford.zoomFactorWalk(1.25, 2.0, 0.1);
-		//abStentiford.randomZFWalk(4000, 1.5);
-		//abStentiford.randomWalk(4000, 400, 200);
+			abStentiford.randomZFWalk(DEFAULT_ZOOM_FACTOR); // using fast method with defined number of generated ROIs
+		//abStentiford.zoomFactorWalk(1.5, 2.0, 0.1, HSTEP, VSTEP);
+		//abStentiford.randomWalk(600, 600);
 		
 		// define region of interest for cropping
 		cv::Rect roi(abStentiford.getX(), abStentiford.getY(), abStentiford.getWidth(), abStentiford.getHeight());
@@ -191,17 +207,6 @@ int main(int argc, char** argv)
 	}
 
 	return 0;
-		//comp.loadTrainedModel("./dataset-Reddit/training/Trained_model21.yml");
-		/*cv::Mat fvec = comp.getFeatureVector(MargolinSM.salMap);
-		float f = comp.classifyComposition(fvec);*/
-	/* results could be saved - for saving define custom paths */
-	//cv::imwrite("img/" + fileName + "/" + "gradient" + fileName + ".jpg", fang.gradient);
-	//cv::imwrite("img/" + fileName + "/" + "MargolinSM" + fileName + ".jpg", MargolinSM.salMap);
-	// cv::imwrite("img/" + fileName + "/" + "StentifordSM" + fileName + ".jpg", StentifordSM.salMap);
-	// cv::imwrite("img/" + fileName + "/" + "cropStentiford" + fileName + ".jpg", cropStentiford);
-	//cv::imwrite("img/" + fileName + "/" + "cropFang" + fileName + ".jpg", cropFang);
-	//cv::imwrite("img/" + fileName + "/" + "ittiSM" + fileName + ".jpg", itti.salMap);
-	//cv::imwrite("img/" + fileName + "/" + "cropSuh" + fileName + ".jpg", cropSuh);
 }
 
 

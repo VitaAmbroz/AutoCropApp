@@ -9,12 +9,16 @@
 
 #include "AutocropStentiford.h"
 
-AutocropStentiford::AutocropStentiford(cv::Mat img) {
+/**
+ * Default constructor
+ * @param img Saliency map of original image
+ */
+AutocropStentiford::AutocropStentiford(cv::Mat sm) {
 	this->x = 0;
 	this->y = 0;
-	this->width = img.cols;
-	this->height = img.rows;
-	this->image = img;
+	this->width = sm.cols;
+	this->height = sm.rows;
+	this->salMap = sm;
 	this->bestScore = 0.0f;
 }
 
@@ -27,47 +31,18 @@ AutocropStentiford::AutocropStentiford(cv::Mat img) {
 */
 void AutocropStentiford::brutalForceWH(int w, int h, int hStep, int vStep) {
 	// parameters conditions
-	if (hStep <= 0 || vStep <= 0 || w <= 0 || h <= 0 || w > this->image.cols || h > this->image.rows)
+	if (hStep < 1 || vStep < 1 || w <= 0 || h <= 0 || w > this->salMap.cols || h > this->salMap.rows)
 		return;
 
 	// end of loop values
-	int endColumn = this->image.cols - w;
-	int endRow = this->image.rows - h;
+	int endColumn = this->salMap.cols - w;
+	int endRow = this->salMap.rows - h;
 
-	// Get ROI with the best attention score
+	// Get ROI with the best average attention score
+#pragma omp parallel for
 	for (int xx = 0; xx < endColumn; xx += hStep) {
 		for (int yy = 0; yy < endRow; yy += vStep) {
 			this->computeMaxScore(xx, yy, w, h);
-		}
-	}
-}
-
-
-void AutocropStentiford::brutalForceLimit(float maxScale, int hStep, int vStep) {
-	// parameters conditions
-	if (hStep < 1 || vStep < 1 || maxScale <= 0.0f || maxScale > 1.0f)
-		return;
-
-	// apply max scale condition to define minimal width and height
-	int minWidth = (int)(maxScale * this->image.cols);
-	int minHeight = (int)(maxScale * this->image.rows);
-	int endColumn = this->image.cols - minWidth;
-	int endRow = this->image.rows - minHeight;
-
-	srand((unsigned int)time(NULL));
-
-	// temporary variables
-	int tmpWidth, tmpHeight;
-
-	// Get ROI with the best attention score
-	for (int xx = 0; xx < endColumn; xx += hStep) {
-		for (int yy = 0; yy < endRow; yy += vStep) {
-			tmpWidth = rand() % (this->image.cols - xx);
-			tmpWidth = (tmpWidth >= minWidth) ? tmpWidth : minWidth;
-			tmpHeight = rand() % (this->image.cols - xx);
-			tmpHeight = (tmpHeight >= minHeight) ? tmpHeight : minHeight;
-
-			this->computeMaxScore(xx, yy, tmpWidth, tmpHeight);
 		}
 	}
 }
@@ -85,19 +60,19 @@ void AutocropStentiford::brutalForceZoomFactor(float zFactor, int hStep, int vSt
 	if (hStep <= 0 || vStep <= 0 || zFactor <= 1.0)
 		return;
 	
-	// reverse zoom factor (ratio of size result/original)
-	// if parameter zFactor is 1.5(original image is 1.5x bigger) => reverseZF is 0.666(2/3 of original image size)
-	float reverseZFactor = 1.0f / zFactor;
+	// if parameter zFactor is 1.5(original image is 1.5x bigger) => scale is 0.666(2/3 of original image size)
+	float scale = 1.0f / zFactor;
 
-	int tmpWidth = (int)(this->image.cols * reverseZFactor);
-	int tmpHeight = (int)(this->image.rows * reverseZFactor);
+	int tmpWidth = (int)(this->salMap.cols * scale);
+	int tmpHeight = (int)(this->salMap.rows * scale);
 
 	// values for end of loop
-	int endColumn = this->image.cols - tmpWidth;
-	int endRow = this->image.rows - tmpHeight;
+	int endColumn = this->salMap.cols - tmpWidth;
+	int endRow = this->salMap.rows - tmpHeight;
 
 
-	// Get ROI with the best attention score
+	// Get ROI with the best average attention score
+#pragma omp parallel for
 	for (int xx = 0; xx < endColumn; xx += hStep) {
 		for (int yy = 0; yy < endRow; yy += vStep) {
 			this->computeMaxScore(xx, yy, tmpWidth, tmpHeight);
@@ -107,12 +82,12 @@ void AutocropStentiford::brutalForceZoomFactor(float zFactor, int hStep, int vSt
 
 
 /**
- * Method for finding optimal cropping roi in interval of zooming(same aspect ratio)
- * @param hStep Size of horizontal step
- * @param vStep Size of vertical step
+ * Method for finding optimal cropping ROI in zooming interval(keep aspect ratio)
  * @param from Bottom bound of zoom factor
  * @param to Top bound of zoom factor
  * @param step Step in increasing zoom factor
+ * @param hStep Size of horizontal step
+ * @param vStep Size of vertical step
  */
 void AutocropStentiford::zoomFactorWalk(float from, float to, float step, int hStep, int vStep) {
 	// parameters conditions
@@ -122,20 +97,63 @@ void AutocropStentiford::zoomFactorWalk(float from, float to, float step, int hS
 	// start with zoom factor defined in parameter from
 	float zf = from;
 	while (zf <= to) {
-		// apply method for getting roi with defined zoom factor
-		this->brutalForceZoomFactor(hStep, vStep, zf);
-		// increment zoom factor with its step
+		// apply method for computing ROI with defined zoom factor
+		this->brutalForceZoomFactor(zf, hStep, vStep);
+		// increment zoom factor with defined step
 		zf += step;
 	}
 }
 
 
 /**
+ * Method for finding optimal cropping ROI with defined aspect ratio(width:height)
+ * @param w Horizontal parameter for computing width:height ratio
+ * @param h Vertical parameter for computing width:height ratio
+ * @param maxZoomFactor Minimal limit of scale(prevent cropping very small ROI)
+ */
+void AutocropStentiford::randomWHratio(int w, int h, float maxZoomFactor) {
+	// parameter conditions
+	if (w < 1 || h < 1 || maxZoomFactor < 1.0f)
+		return;
+	
+	// if parameter zFactor is 1.5(original image is 1.5x bigger) => scale is 0.666(2/3 of original image size)
+	float scale = 1.0f / maxZoomFactor;
+
+	// define minimum values
+	int minWidth, minHeight;
+	if (w > h) {
+		minWidth = (int)(scale * this->salMap.cols); // apply scale limit
+		minHeight = (int)(minWidth * h / w);
+	}
+	else {
+		minHeight = (int)(scale * this->salMap.rows); // apply scale limit
+		minWidth = (int)(minHeight * w / h);
+	}
+
+	// temporary variables
+	int tmpX, tmpY, tmpWidth, tmpHeight;
+
+	srand((unsigned int)time(NULL));
+	// generating random coordinates of top left corner x1,y1 and width(height will be computed)
+#pragma omp parallel for
+	for (int i = 0; i < ITERATIONS; i++) {
+		tmpX = rand() % (this->salMap.cols - minWidth);
+		tmpY = rand() % (this->salMap.rows - minHeight);
+		tmpWidth = rand() % (this->salMap.cols - tmpX);
+		tmpWidth = (tmpWidth >= minWidth) ? tmpWidth : minWidth;
+		tmpHeight = (int)(tmpWidth * h / w);
+
+		// compute average attention score for actual ROI
+		this->computeMaxScore(tmpX, tmpY, tmpWidth, tmpHeight);
+	}
+}
+
+
+/**
 * Method for finding optimal cropping using random ROI generator (keeping aspect ratio)
-* @param iterations Number of generated ROIs
 * @param maxZoomFactor Max limit of zoom factor(prevent very small results)
 */
-void AutocropStentiford::randomZFWalk(int iterations, float maxZoomFactor) {
+void AutocropStentiford::randomZFWalk(float maxZoomFactor) {
 	// parameter condition
 	if (maxZoomFactor < 1.0f)
 		return;
@@ -143,23 +161,27 @@ void AutocropStentiford::randomZFWalk(int iterations, float maxZoomFactor) {
 	// temporary variables
 	int tmpX, tmpY, tmpWidth, tmpHeight;
 
-	// reverse zoom factor
-	// if parameter zFactor is 1.5(original image is 1.5x bigger) => reverseZF is 0.666(2/3 of original image size)
-	float reverseZFactor = 1.0f / maxZoomFactor;
+	// if parameter zFactor is 1.5(original image is 1.5x bigger) => scale is 0.666(2/3 of original image size)
+	float scale = 1.0f / maxZoomFactor;
+
+	// define minimum values
+	int minWidth = (int)(scale * this->salMap.cols); 
+	int minHeight = (int)(scale * this->salMap.rows); 
 
 	// ratio width/height of original image
-	double aspectRatioHW = (double)this->image.rows / (double)this->image.cols;
+	double aspectRatioHW = (double)this->salMap.rows / (double)this->salMap.cols;
 	srand((unsigned int)time(NULL));
 
-	// generating random coordinates of top left corner (x1,y1)
-	for (int i = 0; i < iterations; i++) {
-		tmpX = rand() % (int)(this->image.cols * (1.0f - reverseZFactor));
-		tmpY = rand() % (int)(this->image.rows * (1.0f - reverseZFactor));
-		tmpWidth = rand() % (this->image.cols - tmpX);
-		tmpWidth = (int)((tmpWidth > (this->image.cols * reverseZFactor)) ? tmpWidth : (this->image.cols * reverseZFactor));
+	// generating random coordinates of top left corner (x1,y1) and width 
+#pragma omp parallel for
+	for (int i = 0; i < ITERATIONS; i++) {
+		tmpX = rand() % (this->salMap.cols - minWidth);
+		tmpY = rand() % (this->salMap.rows - minHeight);
+		tmpWidth = rand() % (this->salMap.cols - tmpX);
+		tmpWidth = (tmpWidth >= minWidth) ? tmpWidth : minHeight;
 		tmpHeight = (int)(tmpWidth * aspectRatioHW);
 
-		// apply method for getting roi with random parametres
+		// compute average attention score for actual ROI
 		this->computeMaxScore(tmpX, tmpY, tmpWidth, tmpHeight);
 	}
 }
@@ -167,25 +189,25 @@ void AutocropStentiford::randomZFWalk(int iterations, float maxZoomFactor) {
 
 /**
 * Method for finding optimal cropping using random ROI generator
-* @param iterations Number of generated ROIs
 * @param minWidth The limit of width, there will not be generated lower values than this one
 * @param minHeight The limit of height, there will not be generated lower values than this one
 */
-void AutocropStentiford::randomWalk(int iterations, int minWidth, int minHeight) {
+void AutocropStentiford::randomWalk(int minWidth, int minHeight) {
 	// parameter conditions
-	if (minWidth <= 0 || minHeight <= 0 || minWidth > this->image.cols || minHeight > this->image.rows)
+	if (minWidth <= 0 || minHeight <= 0 || minWidth > this->salMap.cols || minHeight > this->salMap.rows)
 		return;
 	
 	// temporary variables
 	int tmpX, tmpY, tmpWidth, tmpHeight;
 	srand((unsigned int)time(NULL));
 
-	// generating random coordinates of top left corner (x1,y1) and width+height
-	for (int i = 0; i < iterations; i++) {
-		tmpX = rand() % (int)(this->image.cols - minWidth);
-		tmpY = rand() % (int)(this->image.rows - minHeight);
-		tmpWidth = rand() % (this->image.cols - tmpX);
-		tmpHeight = rand() % (this->image.rows - tmpY);
+	// generating random coordinates of top left corner (x1,y1) and also width and height
+#pragma omp parallel for
+	for (int i = 0; i < ITERATIONS; i++) {
+		tmpX = rand() % (int)(this->salMap.cols - minWidth);
+		tmpY = rand() % (int)(this->salMap.rows - minHeight);
+		tmpWidth = rand() % (this->salMap.cols - tmpX);
+		tmpHeight = rand() % (this->salMap.rows - tmpY);
 		// min limit for width and height
 		tmpWidth = (tmpWidth > minWidth) ? tmpWidth : minWidth;
 		tmpHeight = (tmpHeight > minHeight) ? tmpHeight : minHeight;
@@ -210,19 +232,19 @@ void AutocropStentiford::computeMaxScore(int x1, int y1, int w, int h) {
 	int y2 = y1 + h;
 
 	// input condition
-	if (this->image.cols < x2)
+	if (this->salMap.cols < x2)
 		return;
-	if (this->image.rows < y2)
+	if (this->salMap.rows < y2)
 		return;
 
 	//uint8_t valPixel;
 	for (int i = x1; i < x2; i++) {
 		for (int j = y1; j < y2; j++) {
-			//valPixel = this->image.data[j * image.cols + i];
-			//valPixel = this->image.at<uint8_t>(j, i); // slower
+			//valPixel = this->salMap.data[j * salMap.cols + i];
+			//valPixel = this->salMap.at<uint8_t>(j, i); // slower
 			
 			// increment score with pixel value [0,255]
-			actualScore += this->image.data[j * image.cols + i];;
+			actualScore += this->salMap.data[j * this->salMap.cols + i];;
 		}
 	}
 
@@ -265,48 +287,4 @@ int AutocropStentiford::getWidth() {
 */
 int AutocropStentiford::getHeight() {
 	return this->height;
-}
-
-
-
-
-
-
-
-class SphereF_CG :public cv::MinProblemSolver::Function {
-public:
-	int getDims() const { return 4; }
-	double calc(const double* x)const {
-		return x[0] * x[0] + x[1] * x[1] + x[2] * x[2] + x[3] * x[3];
-	}
-	// use automatically computed gradient
-	/*void getGradient(const double* x,double* grad){
-	for(int i=0;i<4;i++){
-	grad[i]=2*x[i];
-	}
-	}*/
-};
-
-static void mytest(cv::Ptr<cv::ConjGradSolver> solver, cv::Ptr<cv::MinProblemSolver::Function> ptr_F, cv::Mat& x, cv::Mat& etalon_x, double etalon_res) {
-	solver->setFunction(ptr_F);
-	//int ndim=MAX(step.cols,step.rows);
-	double res = solver->minimize(x);
-	std::cout << "res:\n\t" << res << std::endl;
-	std::cout << "x:\n\t" << x << std::endl;
-	std::cout << "etalon_res:\n\t" << etalon_res << std::endl;
-	std::cout << "etalon_x:\n\t" << etalon_x << std::endl;
-	std::cout << "--------------------------\n";
-}
-
-void AutocropStentiford::runTest() {
-	cv::Ptr<cv::ConjGradSolver> solver = cv::ConjGradSolver::create();
-
-	cv::Ptr<cv::MinProblemSolver::Function> ptr_F(new SphereF_CG());
-
-	//cv::Mat x = (cv::Mat_<double>(4, 1) << 50.0, 10.0, 1.0, -10.0);
-	cv::Mat x = this->image;
-	cv::Mat	etalon_x = (cv::Mat_<double>(100, 50) << 0.0, 0.0, 0.0, 0.0);
-	double etalon_res = 0.0;
-	
-	mytest(solver, ptr_F, x, etalon_x, etalon_res);
 }

@@ -58,11 +58,13 @@ void AutocropFang::WHCrop(int w, int h, int hStep, int vStep) {
 	int endRow = this->image.rows - h;
 
 	while (candidates.size() < CANDIDATES_COUNT) {  // loop until there will be enough candidate ROIs
+#pragma omp parallel for
 		for (int x1 = 0; x1 < endColumn; x1 += hStep) {
 			for (int y1 = 0; y1 < endRow; y1 += vStep) {
 				// check if candidate ROI has satisfactory saliency energy
 				if (this->candidateContentPreserv(x1, y1, w, h, treshold)) {
 					std::array<int, 4> roi = { x1, y1, w, h };
+#pragma omp critical
 					candidates.push_back(roi);
 				}
 			}
@@ -103,11 +105,13 @@ void AutocropFang::scaleCrop(float scale, int hStep, int vStep) {
 	int endRow = this->image.rows - h;
 
 	while (candidates.size() < CANDIDATES_COUNT) {  // loop until there will be enough candidate ROIs
+#pragma omp parallel for
 		for (int x1 = 0; x1 < endColumn; x1 += hStep) {
 			for (int y1 = 0; y1 < endRow; y1 += vStep) {
 				// check if candidate ROI has satisfactory saliency energy
 				if (this->candidateContentPreserv(x1, y1, w, h, treshold)) {
 					std::array<int, 4> xy = { x1, y1, w, h };
+#pragma omp critical
 					candidates.push_back(xy);
 				}
 			}
@@ -134,10 +138,10 @@ void AutocropFang::WHratioCrop(int w, int h, int hStep, int vStep) {
 
 	// vector for saving generated candidates for cropping
 	std::vector<std::array<int, 4>> candidates;
-	// init content preservation(saliency) treshold empirically to 0.66
-	const float TRES = 0.66f;
+	// init content preservation(saliency) treshold empirically to 0.6
+	const float TRES = 0.6f;
 	// constant for incrementing width or height until enough candidates are generated
-	const int SIZE_INCREMENT = (w > h) ? (int)(0.05f * this->image.cols) : (int)(0.05f * this->image.rows);
+	const int SIZE_INCREMENT = (w > h) ? (int)(0.1f * this->image.cols) : (int)(0.1f * this->image.rows);
 
 	// init temporary variables for width and height
 	int tmpW, tmpH;
@@ -156,11 +160,13 @@ void AutocropFang::WHratioCrop(int w, int h, int hStep, int vStep) {
 		int endColumn = this->image.cols - tmpW;
 		int endRow = this->image.rows - tmpH;
 
+#pragma omp parallel for
 		for (int x1 = 0; x1 < endColumn; x1 += hStep) {
 			for (int y1 = 0; y1 < endRow; y1 += vStep) {
 				// check if candidate ROI has satisfactory saliency energy
 				if (this->candidateContentPreserv(x1, y1, tmpW, tmpH, TRES)) {
 					std::array<int, 4> xy = { x1, y1, tmpW, tmpH };
+#pragma omp critical
 					candidates.push_back(xy);
 				}
 			}
@@ -217,7 +223,7 @@ void AutocropFang::randomGridCrop() {
 	// empirically set treshold for content preservation model to 0.7 (originally it was 0.4, but that very often misses main subjects)
 	const float SAL_TRESHOLD = 0.7f;
 	// number of ROIs that will be generated at each position in grid
-	const int ROI_NUMBER = 10;
+	const int ROI_NUMBER = 5;
 
 	for (int x1 = 0; x1 < endCol; x1 += hGrid) {
 		for (int y1 = 0; y1 < endRow; y1 += vGrid) {
@@ -447,7 +453,6 @@ float AutocropFang::computeBoundarySimplicity(int x1, int y1, int w, int h) {
 	if (this->gradient.rows <= y2)
 		return 0;
 
-
 	for (int i = x1; i < x2; i++) {
 		// increment score with pixel value [0,255]
 		// top bound (2 pixels wide)
@@ -460,7 +465,7 @@ float AutocropFang::computeBoundarySimplicity(int x1, int y1, int w, int h) {
 		// increment number of pixels
 		pixels += 4;
 	}
-	
+
 	for (int j = (y1 + 2); j < (y2 - 2); j++) {
 		// increment score with pixel value [0,255]
 		// left bound (2 pixels wide)

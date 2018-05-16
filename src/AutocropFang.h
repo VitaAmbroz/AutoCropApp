@@ -19,7 +19,7 @@ using namespace std;
 using namespace cv;
 
 /* number of generated ROIs for that will be computed scores of VC model and BS model */
-const int CANDIDATES_COUNT = 1000;
+const int CANDIDATES_COUNT = 500;
 
 /* weights of Visual composition and Boundary simplicity models */
 const int WEIGHT_COMPOS = 5;
@@ -28,7 +28,7 @@ const int WEIGHT_BOUNDARY = 1;
 /* default step when walking trough grid */
 const int DEFAULT_STEP_FANG = 10;
 /* minimum size of roi */
-const float MAX_SCALE_FANG = 0.3f;
+const float MAX_SCALE_FANG = 0.4f;
 /* value for initializing treshold in Content preservation model */
 const float SALIENCY_TRESHOLD_INIT = 0.8f;
 

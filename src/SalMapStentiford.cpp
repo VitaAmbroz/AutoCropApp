@@ -9,6 +9,10 @@
 
 #include "SalMapStentiford.h"
 
+/**
+ * Default constructor
+ * @param img Original image
+ */
 SalMapStentiford::SalMapStentiford(cv::Mat img) {
 	this->originalImage = img;
 	this->salMap = Mat();
@@ -19,7 +23,7 @@ SalMapStentiford::SalMapStentiford(cv::Mat img) {
 
 
 /**
-* Method for generating saliency map of input image, it is saved into public attribute salMap
+* Method for generating saliency map of input image, it is saved to matrix salMap
 * @param m Number of pixels in each fork
 * @param eps Definiton for neighbourhood of current pixels = max distance of other pixels 
 * @param t Number of generated forks
@@ -28,8 +32,8 @@ SalMapStentiford::SalMapStentiford(cv::Mat img) {
 void SalMapStentiford::generateSalMap(int m, int eps, int t, float treshold) {
 	srand((unsigned int)time(NULL));
 
-	// big images would be scaled down - max 500px width or height
-	const float maxSize = 500.f;
+	// big images would be scaled down - max 400px width or height
+	const float maxSize = 400.f;
 	double scale = maxSize / max(this->originalImage.cols, this->originalImage.rows);
 
 	if (scale >= 1.f) {	// dont resize
@@ -45,20 +49,18 @@ void SalMapStentiford::generateSalMap(int m, int eps, int t, float treshold) {
 	cv::Mat salmap_scaled = Mat(this->image.rows, this->image.cols, CV_8UC1);
 
 	// loop and computation for every single pixel of original image
+#pragma omp parallel for
 	for (int xx = 0; xx < this->image.cols; xx++) {
 		for (int yy = 0; yy < this->image.rows; yy++) {
 			int pxAttentionScore = 0;
 			bool forkMisMatch = false;
 		
 			for (int i = 0; i < t; i++) {
-				//int** forkSA = this->createForkSA(xx, yy, this->mPixelsInFork, eps);
-				//int** forkSB = this->createForkSB(forkSA);
 				std::vector<std::array<int, 2>> forkSA = this->createForkSA(xx, yy, m, eps);
 				std::vector<std::array<int, 2>> forkSB = this->createForkSB(forkSA, m);
 
 				forkMisMatch = false;
 				for (int j = 0; j < m; j++) {
-					//if (this->mismatchPixels(forkSA[j][0], forkSA[j][1], forkSB[j][0], forkSB[j][1], treshold)) {
 					// check mismatch of forks
 					if (this->mismatchPixels(std::get<0>(forkSA.at(j)),
 											std::get<1>(forkSA.at(j)),
@@ -119,9 +121,9 @@ bool SalMapStentiford::mismatchPixels(int x1, int y1, int x2, int y2, float tres
 	//	abs(this->image.data[channels * (this->image.cols * y1 + x1) + 2] - this->image.data[channels * (this->image.cols * y2 + x2) + 2]);
 	
 	// L2 norm
-	/*double Fxy = sqrt(pow(this->image.data[channels * (this->image.cols * y1 + x1) + 0] - this->image.data[channels * (this->image.cols * y2 + x2) + 0], 2) +
+	double Fxy = sqrt(pow(this->image.data[channels * (this->image.cols * y1 + x1) + 0] - this->image.data[channels * (this->image.cols * y2 + x2) + 0], 2) +
 		pow(this->image.data[channels * (this->image.cols * y1 + x1) + 1] - this->image.data[channels * (this->image.cols * y2 + x2) + 1], 2) +
-		pow(this->image.data[channels * (this->image.cols * y1 + x1) + 2] - this->image.data[channels * (this->image.cols * y2 + x2) + 2], 2));*/
+		pow(this->image.data[channels * (this->image.cols * y1 + x1) + 2] - this->image.data[channels * (this->image.cols * y2 + x2) + 2], 2));
 
 	// Colour Average
 	/*double F1 = this->image.data[channels * (this->image.cols * y1 + x1) + 0] +
@@ -137,15 +139,15 @@ bool SalMapStentiford::mismatchPixels(int x1, int y1, int x2, int y2, float tres
 	double Fxy = abs(F1 - F2);*/
 
 	// empiric grayscale equation
-	double F1 = 0.11 * this->image.data[channels * (this->image.cols * y1 + x1) + 0] +	// blue
-		0.59 * this->image.data[channels * (this->image.cols * y1 + x1) + 1] +		// green
-		0.3 * this->image.data[channels * (this->image.cols * y1 + x1) + 2];		// red
+	// double F1 = 0.11 * this->image.data[channels * (this->image.cols * y1 + x1) + 0] +	// blue
+	// 	0.59 * this->image.data[channels * (this->image.cols * y1 + x1) + 1] +		// green
+	// 	0.3 * this->image.data[channels * (this->image.cols * y1 + x1) + 2];		// red
 
-	double F2 = 0.11 * this->image.data[channels * (this->image.cols * y2 + x2) + 0] +	// blue
-		0.59 * this->image.data[channels * (this->image.cols * y2 + x2) + 1] +		// green
-		0.3 * this->image.data[channels * (this->image.cols * y2 + x2) + 2];		// red
+	// double F2 = 0.11 * this->image.data[channels * (this->image.cols * y2 + x2) + 0] +	// blue
+	// 	0.59 * this->image.data[channels * (this->image.cols * y2 + x2) + 1] +		// green
+	// 	0.3 * this->image.data[channels * (this->image.cols * y2 + x2) + 2];		// red
 
-	double Fxy = abs(F1 - F2);
+	// double Fxy = abs(F1 - F2);
 
 	if (Fxy > treshold)
 		return true;
@@ -248,48 +250,3 @@ int SalMapStentiford::checkMaxMinHeight(int pxY) {
 
 	return result;
 }
-
-
-
-/* GARBAGE */
-/*int** SaliencyMap::createForkSB(int** sa) {
-	int **forkSB = (int**)malloc(this->mPixelsInFork * sizeof(int*));
-	for (int i = 0; i < this->mPixelsInFork; i++)
-		forkSB[i] = (int*)malloc(2 * sizeof(int));
-
-	int deltaX = 1 + (rand() % this->hTranslation);
-	int deltaY = 1 + (rand() % this->vTranslation);
-
-	int minusChanceX = rand() % 100;
-	int minusChanceY = rand() % 100;
-	if (minusChanceX < 50) deltaX *= -1;
-	if (minusChanceY < 50) deltaY *= -1;
-
-	for (int i = 0; i < this->mPixelsInFork; i++) {
-		forkSB[i][0] = this->checkMaxMinWidth(sa[i][0] + deltaX);
-		forkSB[i][1] = this->checkMaxMinHeight(sa[i][1] + deltaY);
-	}
-
-	return forkSB;
-}*/
-
-/*int** SaliencyMap::createForkSB(int** sa) {
-	int **forkSB = (int**)malloc(this->mPixelsInFork * sizeof(int*));
-	for (int i = 0; i < this->mPixelsInFork; i++)
-		forkSB[i] = (int*)malloc(2 * sizeof(int));
-
-	int deltaX = 1 + (rand() % this->hTranslation);
-	int deltaY = 1 + (rand() % this->vTranslation);
-
-	int minusChanceX = rand() % 100;
-	int minusChanceY = rand() % 100;
-	if (minusChanceX < 50) deltaX *= -1;
-	if (minusChanceY < 50) deltaY *= -1;
-
-	for (int i = 0; i < this->mPixelsInFork; i++) {
-		forkSB[i][0] = this->checkMaxMinWidth(sa[i][0] + deltaX);
-		forkSB[i][1] = this->checkMaxMinHeight(sa[i][1] + deltaY);
-	}
-
-	return forkSB;
-}*/
