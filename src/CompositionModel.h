@@ -6,7 +6,6 @@
  * File: CompositionModel.h
  * Github repository: https://github.com/VitaAmbroz/AutoCropApp
  */
-
 #ifndef __COMPOSITION_H__
 #define __COMPOSITION_H__
 

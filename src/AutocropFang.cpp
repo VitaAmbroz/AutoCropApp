@@ -13,7 +13,7 @@
 * Constructor for cropping algorithm(Fang et al. 2014)
 * @param img Original image to be cropped
 * @param sMap Saliency map of original image(Margolin et al. 2013)
-* @param trainedMode�Path Filepath for trained Visual Composition model
+* @param trainedModelPath Filepath for trained Visual Composition model
 */
 AutocropFang::AutocropFang(cv::Mat img, cv::Mat sMap, std::string trainedModelPath) {
 	this->x = 0;

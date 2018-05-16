@@ -22,6 +22,10 @@ public:
     Arguments(int mArgc, char** mArgv);
     // path of original image that will be cropped
     std::string imgPath;
+    // flag for activate training of visual composition model
+    bool runTraining;
+    // path of training dataset of images
+    std::string trainingDatasetPath;
 
     // getters and setters of flags and values
     bool isHelpActivated();

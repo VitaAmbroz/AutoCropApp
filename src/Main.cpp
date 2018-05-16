@@ -35,14 +35,22 @@ int main(int argc, char** argv)
 {
 	// parse command line arguments and save flags
 	Arguments arguments(argc, argv);
+	// check if help message should be displayed
 	if (arguments.isHelpActivated()) {
 		/* TODO */
 		std::cout << "Showing help message" << std::endl;
 		std::exit(EXIT_SUCCESS);
 	}
+	// check if parsing of arguments was correct 
 	if (!arguments.isAllClear()) {
 		std::cerr << "Run program with argument -help to see list of possible arguments" << std::endl;
 		std::exit(EXIT_FAILURE);
+	}
+	// run training pipeline for creating model of Visual composition
+	if (arguments.runTraining) {
+		CompositionModel comp;
+		comp.fullTrainingPipeline(arguments.trainingDatasetPath, "./models/Trained_model.yml");
+		std::exit(EXIT_SUCCESS);
 	}
 
 
@@ -183,9 +191,6 @@ int main(int argc, char** argv)
 	}
 
 	return 0;
-
-	//CompositionModel comp;
-		//comp.fullTrainingPipeline("./dataset-Reddit", "./dataset-Reddit/Trained_model21new.yml");
 		//comp.loadTrainedModel("./dataset-Reddit/training/Trained_model21.yml");
 		/*cv::Mat fvec = comp.getFeatureVector(MargolinSM.salMap);
 		float f = comp.classifyComposition(fvec);*/

@@ -17,6 +17,9 @@ Arguments::Arguments(int mArgc, char** mArgv) {
     this->allClear = true;
     this->enableWindows = true;
 
+    this->runTraining = false;
+    this->trainingDatasetPath = "";
+
     this->suh = false;
     this->stentiford = false;
     this->fang = false;
@@ -56,11 +59,24 @@ void Arguments::parse() {
         if (std::string(this->argv[1]) == "-h" || std::string(this->argv[1]) == "-help" || std::string(this->argv[1]) == "--help") {
             this->help = true;
         }
+        else if (std::string(this->argv[1]) == "-train" || std::string(this->argv[1]) == "train" || std::string(this->argv[1]) == "-training") {
+            std::cerr << "Undefined path of training dataset!" << std::endl;
+            this->allClear = false;
+        }
         else { // the first argument must be path of input image
             this->imgPath = this->argv[1];
         }
     }
     else { // more arguments
+        // check if training was specified $ ./autocrop -train path
+        if (std::string(this->argv[1]) == "-train" || std::string(this->argv[1]) == "train" || std::string(this->argv[1]) == "-training") {
+            this->runTraining = true;
+            this->trainingDatasetPath = this->argv[2];
+
+            return;
+        }
+
+
         this->imgPath = this->argv[1]; // first argument must be path of input image
 
         // loop in list of arguments

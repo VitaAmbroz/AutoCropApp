@@ -44,8 +44,9 @@ void CompositionModel::createFeatureMat(fs::path srcDir) {
 	// save paths for all images in training dataset of well composed images
 	std::vector<fs::path> paths = this->getImagePaths(srcDir);
 
+#pragma omp parallel for
 	for (int i = 0; i < paths.size(); i++) {
-		std::cout << "Processing " << paths.at(i).string() << std::endl;	// full path
+		std::cout << i << ") Processing " << paths.at(i).string() << std::endl;	// full path
 		//std::cout << "filename and extension: " << paths.at(i).filename() << std::endl; // img.jpg
 		//std::cout << "filename only: " << paths.at(i).stem() << std::endl;     // img
 
@@ -346,6 +347,11 @@ cv::Mat CompositionModel::loadImgReduced(std::string path)
 * @return Vector containing paths to images in selected directory
 */
 std::vector<fs::path> CompositionModel::getImagePaths(fs::path dir) {
+	if (!is_directory(dir) || !fs::exists(dir)) {
+		std::cerr << "Invalid path of dataset directory!" << std::endl;
+		std::exit(EXIT_FAILURE);
+	}
+	
 	std::vector<fs::path> out;
 	fs::directory_iterator end;
 	for (fs::directory_iterator it(dir); it != end; it++)

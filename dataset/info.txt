@@ -1,0 +1,8 @@
+Tento dataset byl použit na základě této práce: https://github.com/swook/autocrop/tree/master/datasets/Reddit
+
+Popis: Stáhne až 2300 obrázků s nejlepším hodnocením komunity ze sítě https://www.reddit.com/ za poslední rok. Vybrané obrázky jsou z kategorií CityPorn, EarthPorn, photocritique, WaterPorn, itookapicture a windowshots. Obrázky budou ukládány do adresáře, kde je umístěn tento skript.
+
+Spuštění: ./get_dataset.py
+
+Upozornění: Některé stažené obrázky způsobovaly problém při generování jejich saliency maps, a proto bylo nutné je odstranit. Jednalo se přibližně o 10 obrázků z celkového množství asi 2220.
+

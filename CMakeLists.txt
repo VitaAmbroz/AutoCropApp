@@ -6,7 +6,7 @@ find_package( Boost REQUIRED COMPONENTS filesystem )
 find_package( OpenCV REQUIRED )
 find_package( Threads )
 
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp" )
 
 # change your local PATH of VLFeat here!
 set( VLFEAT_INCLUDE_DIRS "vlfeat" )
